@@ -5,10 +5,11 @@
 // ============================================================================
 
 // --- 核心模块导入 ---
-import { Agent } from '@mastra/core/agent';     // Mastra Agent 基类
-import { Memory } from '@mastra/memory';            // Agent 记忆模块（多轮对话上下文）
-import { weatherTool } from '../tools/weather-tool'; // 天气查询工具（调用外部 API）
-import { scorers } from '../scorers/weather-scorer';   // 评估评分器集合
+import { Agent } from '@mastra/core/agent';              // Mastra Agent 基类
+import { Memory } from '@mastra/memory';                   // Agent 记忆模块（多轮对话上下文）
+import { weatherTool } from '../tools/weather-tool';        // 天气查询工具（调用外部 Open-Meteo API）
+import { activityRecommenderTool } from '../tools/activity-recommender-tool'; // 活动推荐工具（Skill 配套运行时工具）
+import { scorers } from '../scorers/weather-scorer';          // 评估评分器集合
 
 // --- Weather Agent 实例定义 ---
 export const weatherAgent = new Agent({
@@ -27,10 +28,19 @@ export const weatherAgent = new Agent({
       - If the user asks for activities and provides the weather forecast, suggest activities based on the weather forecast.
       - If the user asks for activities, respond in the format they request.
 
+      Workflow for activity-related queries:
+      1) First use the weatherTool to fetch current weather data for the location
+      2) Then pass temperature/humidity/windSpeed/conditions into activityRecommenderTool together with the user's preference
+      3) Return a concise Chinese list of recommended and not-recommended activities with reasons
+
       Use the weatherTool to fetch current weather data.
+      Use the activityRecommenderTool to suggest suitable outdoor activities.
 `,
   model: 'openai/gpt-4o',                          // 使用的大模型：OpenAI GPT-4o
-  tools: { weatherTool },                             // 挂载可用工具集：允许调用天气查询工具
+  tools: {
+    weatherTool,                                      // 工具 1：天气查询工具
+    activityRecommenderTool,                       // 工具 2：户外活动推荐（来自 weather-activity-recommender Skill）
+  },
 
   // --- 评估评分器配置（用于质量评估与观测）
   // sampling.rate = 1 表示对每次调用都进行评分（100% 采样率）
